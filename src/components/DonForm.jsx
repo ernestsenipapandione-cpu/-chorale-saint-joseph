@@ -5,9 +5,6 @@ const DonForm = () => {
   const [donForm, setDonForm] = useState({ nom: '', telephone: '', montant: '' })
   const [donLoading, setDonLoading] = useState(false)
 
-  const API_KEY = "02a4e8c67fd77c1468cbfefea15d3fe6f66ff8b190a37559decc760d92028626";
-  const API_SECRET = "cc98f7e3c833a1a79eaf0666644a0ce87814fe64a5a486c195d00800ba800a60";
-
   const handleDon = async (methode) => {
     if (!donForm.nom || !donForm.montant) {
       toast.error('Veuillez remplir votre nom et le montant !')
@@ -28,39 +25,29 @@ const DonForm = () => {
         cancel_url: `${window.location.origin}/`,
       };
 
-      // ✅ UTILISATION D'UN PROXY PLUS STABLE
-      const targetUrl = "https://paytech.sn/api/payment/request-payment";
-      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
-
-      const response = await fetch(proxyUrl, {
+      // 🚀 APPEL À TON SERVEUR VERCEL (api/paytech.js)
+      const response = await fetch("/api/paytech", {
         method: "POST",
         headers: {
-          "Accept": "application/json",
           "Content-Type": "application/json",
-          "API_KEY": API_KEY,
-          "API_SECRET": API_SECRET
         },
-        // Avec AllOrigins, on envoie parfois les données différemment, 
-        // mais essayons d'abord la méthode standard POST
         body: JSON.stringify(paymentData)
       });
 
-      const data = await response.json();
-      
-      // AllOrigins renvoie souvent le résultat dans data.contents
-      const result = typeof data.contents === 'string' ? JSON.parse(data.contents) : data;
+      const result = await response.json();
 
       if (result.success === 1) {
+        // ✅ On redirige vers la page Orange Money / Wave
         window.location.href = result.redirect_url;
       } else {
+        // ❌ Message d'erreur venant de PayTech
         const errorMsg = result.errors ? result.errors[0] : "Erreur de configuration";
         toast.error("PayTech : " + errorMsg);
-        console.error("Réponse PayTech:", result);
       }
 
     } catch (err) {
-      console.error("Erreur complète:", err);
-      toast.error("Connexion impossible. Vérifie ton domaine sur PayTech.");
+      console.error("Erreur:", err);
+      toast.error("Le serveur de paiement ne répond pas.");
     } finally {
       setDonLoading(false)
     }
@@ -91,14 +78,14 @@ const DonForm = () => {
             disabled={donLoading}
             className="w-full bg-[#FF7900] text-white py-4 rounded-xl font-bold disabled:opacity-50"
           >
-            {donLoading ? '⏳ Connexion...' : '🟠 Orange Money'}
+            {donLoading ? '⏳ Connexion...' : '🟠 Payer avec Orange Money'}
           </button>
           <button 
             onClick={() => handleDon('Wave')}
             disabled={donLoading}
             className="w-full bg-[#1da1f2] text-white py-4 rounded-xl font-bold disabled:opacity-50"
           >
-            {donLoading ? '⏳ Connexion...' : '🔵 Wave'}
+            {donLoading ? '⏳ Connexion...' : '🔵 Payer avec Wave'}
           </button>
         </div>
       </div>
