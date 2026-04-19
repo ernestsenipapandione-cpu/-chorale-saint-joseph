@@ -5,25 +5,13 @@ export const checkIsAdmin = async () => {
   if (!user) return false
 
   const { data, error } = await supabase
-    .from('membres')
-    .select('*')
-    .eq('Email', user.email)
+    .from('Membres') // 'M' majuscule comme ton tableau
+    .select('role')
+    .eq('email', user.email)
     .single()
 
   if (error || !data) return false
-  return data.Roles === 'Admin'
-}
-
-export const getAdminInfo = async () => {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-
-  const { data, error } = await supabase
-    .from('membres')
-    .select('*')
-    .eq('Email', user.email)
-    .single()
-
-  if (error || !data) return null
-  return data
+  
+  // On transforme en minuscule pour être sûr que ça marche (admin ou Admin)
+  return data.role?.toLowerCase() === 'admin'
 }
