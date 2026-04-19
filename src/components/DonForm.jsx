@@ -31,16 +31,19 @@ const DonForm = () => {
         currency: "XOF",
         ref_command: `DON-${Date.now()}`,
         command_name: `Don de ${donForm.nom}`,
-        env: "live", // ⚠️ Assure-toi que ton app PayTech est en mode PROD
+        env: "live", 
         success_url: `${window.location.origin}/merci?nom=${encodeURIComponent(donForm.nom)}&montant=${donForm.montant}&methode=${encodeURIComponent(methode)}`,
         cancel_url: `${window.location.origin}/`,
+        // On répète les clés ici pour plus de sécurité avec le proxy
+        api_key: API_KEY,
+        api_secret: API_SECRET
       };
 
-      // 💡 AJOUT DU PROXY pour éviter l'erreur de configuration navigateur
+      // Utilisation d'un proxy plus robuste
       const proxyUrl = "https://corsproxy.io/?";
       const targetUrl = "https://paytech.sn/api/payment/request-payment";
 
-      const response = await fetch(proxyUrl + targetUrl, {
+      const response = await fetch(proxyUrl + encodeURIComponent(targetUrl), {
         method: "POST",
         headers: {
           "Accept": "application/json",
@@ -51,20 +54,24 @@ const DonForm = () => {
         body: JSON.stringify(paymentData)
       });
 
+      // On vérifie si la réponse est bien du JSON
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("La réponse du serveur n'est pas valide");
+      }
+
       const result = await response.json();
 
       if (result.success === 1) {
         window.location.href = result.redirect_url;
       } else {
-        // Affiche l'erreur précise venant de PayTech
-        const errorMsg = result.errors ? result.errors[0] : "Vérifiez vos clés API et le domaine";
-        toast.error("Erreur PayTech : " + errorMsg);
-        console.error("Détails:", result);
+        const errorMsg = result.errors ? result.errors[0] : "Erreur de configuration API";
+        toast.error("PayTech : " + errorMsg);
       }
 
     } catch (err) {
-      toast.error("Problème de connexion au serveur de paiement");
-      console.error(err);
+      console.error("Détails erreur:", err);
+      toast.error("Le service de paiement est indisponible (CORS/Proxy)");
     } finally {
       setDonLoading(false)
     }
@@ -117,7 +124,7 @@ const DonForm = () => {
             disabled={donLoading}
             className="w-full bg-[#FF7900] text-white py-4 rounded-xl font-bold text-lg hover:bg-orange-600 transition flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            {donLoading ? '⏳ Connexion...' : '🟠 Orange Money'}
+            {donLoading ? '⏳ Connexion...' : '🟠 Payer avec Orange Money'}
           </button>
           
           <button 
@@ -130,7 +137,7 @@ const DonForm = () => {
         </div>
 
         <p className="text-[10px] text-gray-400 text-center mt-4 uppercase tracking-widest font-bold">
-          PayTech Sénégal
+          Système sécurisé PayTech
         </p>
       </div>
     </div>
