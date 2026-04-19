@@ -43,7 +43,7 @@ const DonForm = () => {
         currency: "XOF",
         ref_command: `DON-${Date.now()}`, // Identifiant unique
         command_name: `Don de ${donForm.nom} (${donForm.telephone})`,
-        env: "test", // ⚠️ REMPLACE "test" PAR "live" QUAND TU VEUX RECEVOIR DU VRAI ARGENT
+        env: "live", // ⚠️ REMPLACE "test" PAR "live" QUAND TU VEUX RECEVOIR DU VRAI ARGENT
         success_url: window.location.origin + "/merci",
         ipn_url: window.location.origin + "/api/paytech-callback"
       };
