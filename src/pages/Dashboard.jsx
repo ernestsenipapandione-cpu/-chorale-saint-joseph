@@ -15,6 +15,7 @@ const Dashboard = () => {
   })
   const [reservations, setReservations] = useState([])
   const [evenements, setEvenements] = useState([])
+  const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -31,18 +32,25 @@ const Dashboard = () => {
   }, [navigate])
 
   const fetchStats = async () => {
-    const [membres, evenements, partitions, messages, finances, reservations] = await Promise.all([
-      supabase.from('membres').select('*', { count: 'exact' }),
-      supabase.from('evenements').select('*', { count: 'exact' }),
-      supabase.from('partitions').select('*', { count: 'exact' }),
-      supabase.from('messages').select('*', { count: 'exact' }),
+    setLoading(true)
+    const [membres, evenements, partitions, messages, finances, resData] = await Promise.all([
+      supabase.from('membres').select('*', { count: 'exact', head: true }),
+      supabase.from('evenements').select('*', { count: 'exact', head: true }),
+      supabase.from('partitions').select('*', { count: 'exact', head: true }),
+      supabase.from('messages').select('*', { count: 'exact', head: true }),
       supabase.from('finances').select('montant, type'),
       supabase.from('contacts').select('*').order('created_at', { ascending: false }).limit(5),
     ])
 
-    const totalFinances = finances.data
+    const totalEntrees = finances.data
       ? finances.data
           .filter(f => f.type === 'Entrée')
+          .reduce((acc, f) => acc + parseFloat(f.montant || 0), 0)
+      : 0
+    
+    const totalSorties = finances.data
+      ? finances.data
+          .filter(f => f.type === 'Sortie')
           .reduce((acc, f) => acc + parseFloat(f.montant || 0), 0)
       : 0
 
@@ -51,11 +59,11 @@ const Dashboard = () => {
       evenements: evenements.count || 0,
       partitions: partitions.count || 0,
       messages: messages.count || 0,
-      finances: totalFinances,
-      reservations: reservations.data?.length || 0,
+      finances: totalEntrees - totalSorties,
+      reservations: resData.data?.length || 0,
     })
 
-    setReservations(reservations.data || [])
+    setReservations(resData.data || [])
 
     const { data: evData } = await supabase
       .from('evenements')
@@ -64,6 +72,7 @@ const Dashboard = () => {
       .order('date_debut', { ascending: true })
       .limit(5)
     setEvenements(evData || [])
+    setLoading(false)
   }
 
   const getStatutColor = (statut) => {
@@ -77,110 +86,109 @@ const Dashboard = () => {
 
   return (
     <Layout>
-      <div className="p-6">
-
-        {/* Bienvenue */}
-        <div className="bg-white rounded-2xl shadow p-6 mb-6">
-          <h2 className="text-2xl font-bold text-primary">
-            Bienvenue 👋
-          </h2>
-          <p className="text-gray-500 mt-1">
-            Tableau de bord de la Chorale Saint Joseph
-          </p>
-          <p className="text-sm text-gray-400 mt-1">
-            {user?.email}
-          </p>
-        </div>
-
-        {/* Cartes statistiques */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-          <div className="bg-white rounded-2xl shadow p-4 flex flex-col items-center">
-            <span className="text-3xl mb-2">👥</span>
-            <p className="text-gray-500 text-xs">Membres</p>
-            <p className="text-2xl font-bold text-primary">{stats.membres}</p>
-          </div>
-          <div className="bg-white rounded-2xl shadow p-4 flex flex-col items-center">
-            <span className="text-3xl mb-2">📅</span>
-            <p className="text-gray-500 text-xs">Événements</p>
-            <p className="text-2xl font-bold text-primary">{stats.evenements}</p>
-          </div>
-          <div className="bg-white rounded-2xl shadow p-4 flex flex-col items-center">
-            <span className="text-3xl mb-2">🎵</span>
-            <p className="text-gray-500 text-xs">Partitions</p>
-            <p className="text-2xl font-bold text-primary">{stats.partitions}</p>
-          </div>
-          <div className="bg-white rounded-2xl shadow p-4 flex flex-col items-center">
-            <span className="text-3xl mb-2">💬</span>
-            <p className="text-gray-500 text-xs">Messages</p>
-            <p className="text-2xl font-bold text-primary">{stats.messages}</p>
-          </div>
-          <div className="bg-white rounded-2xl shadow p-4 flex flex-col items-center">
-            <span className="text-3xl mb-2">💰</span>
-            <p className="text-gray-500 text-xs">Finances</p>
-            <p className="text-lg font-bold text-green-500">
-              {stats.finances.toLocaleString()} F
-            </p>
-          </div>
-          <div className="bg-white rounded-2xl shadow p-4 flex flex-col items-center">
-            <span className="text-3xl mb-2">📩</span>
-            <p className="text-gray-500 text-xs">Réservations</p>
-            <p className="text-2xl font-bold text-primary">{stats.reservations}</p>
+      <div className="p-4 md:p-6 lg:p-8">
+        
+        {/* Header Bienvenue - Adapté Mobile */}
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 mb-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h2 className="text-xl md:text-2xl font-black text-primary flex items-center gap-2">
+                Bienvenue 👋
+              </h2>
+              <p className="text-gray-500 text-sm mt-1">
+                Gestionnaire Chorale Saint Joseph
+              </p>
+            </div>
+            <div className="bg-blue-50 px-4 py-2 rounded-2xl border border-blue-100">
+              <p className="text-[10px] uppercase font-black text-blue-400 leading-none mb-1">Session active</p>
+              <p className="text-xs font-bold text-primary truncate max-w-[200px]">{user?.email}</p>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Cartes statistiques - Grid intelligent 2 colonnes mobile / 6 desktop */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4 mb-8">
+          {[
+            { label: 'Membres', val: stats.membres, icon: '👥', color: 'text-blue-600' },
+            { label: 'Events', val: stats.evenements, icon: '📅', color: 'text-purple-600' },
+            { label: 'Chants', val: stats.partitions, icon: '🎵', color: 'text-pink-600' },
+            { label: 'Messages', val: stats.messages, icon: '💬', color: 'text-orange-600' },
+            { label: 'Caisse', val: `${stats.finances.toLocaleString()} F`, icon: '💰', color: 'text-green-600', special: true },
+            { label: 'Réserv.', val: stats.reservations, icon: '📩', color: 'text-indigo-600' },
+          ].map((s, i) => (
+            <div key={i} className="bg-white rounded-2xl shadow-sm border border-gray-50 p-4 flex flex-col items-center text-center hover:shadow-md transition">
+              <span className="text-2xl mb-1">{s.icon}</span>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">{s.label}</p>
+              <p className={`text-sm md:text-lg font-black truncate w-full ${s.color}`}>
+                {loading ? '...' : s.val}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
           {/* Prochains événements */}
-          <div className="bg-white rounded-2xl shadow p-6">
-            <h3 className="text-xl font-bold text-primary mb-4">
-              📅 Prochains événements
-            </h3>
-            {evenements.length === 0 ? (
-              <p className="text-gray-500">Aucun événement à venir</p>
-            ) : (
-              <div className="space-y-3">
-                {evenements.map((ev) => (
-                  <div key={ev.id} className="flex items-center gap-3 border-b pb-3">
-                    <span className="text-2xl">📅</span>
-                    <div>
-                      <p className="font-semibold text-primary">{ev.titre}</p>
-                      <p className="text-sm text-gray-500">
-                        {new Date(ev.date_debut).toLocaleDateString('fr-FR', {
-                          weekday: 'long',
-                          day: 'numeric',
-                          month: 'long',
-                        })}
-                      </p>
-                      {ev.lieu && <p className="text-xs text-gray-400">📍 {ev.lieu}</p>}
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="p-5 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
+              <h3 className="font-black text-primary uppercase text-xs tracking-widest flex items-center gap-2">
+                <span>📅</span> Agenda à venir
+              </h3>
+            </div>
+            <div className="p-5">
+              {evenements.length === 0 ? (
+                <p className="text-center py-4 text-gray-400 text-sm">Aucun événement prévu</p>
+              ) : (
+                <div className="space-y-4">
+                  {evenements.map((ev) => (
+                    <div key={ev.id} className="flex items-start gap-4 group">
+                      <div className="bg-primary/5 text-primary p-3 rounded-2xl font-black text-center min-w-[60px]">
+                        <p className="text-[10px] uppercase leading-none mb-1">
+                          {new Date(ev.date_debut).toLocaleDateString('fr-FR', { month: 'short' })}
+                        </p>
+                        <p className="text-xl leading-none">
+                          {new Date(ev.date_debut).toLocaleDateString('fr-FR', { day: '2-digit' })}
+                        </p>
+                      </div>
+                      <div className="flex-1 border-b border-gray-50 pb-3">
+                        <p className="font-bold text-gray-800 group-hover:text-primary transition">{ev.titre}</p>
+                        <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                          📍 {ev.lieu || 'Lieu non défini'}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Dernières réservations */}
-          <div className="bg-white rounded-2xl shadow p-6">
-            <h3 className="text-xl font-bold text-primary mb-4">
-              📩 Dernières réservations
-            </h3>
-            {reservations.length === 0 ? (
-              <p className="text-gray-500">Aucune réservation</p>
-            ) : (
-              <div className="space-y-3">
-                {reservations.map((res) => (
-                  <div key={res.id} className="flex items-center justify-between border-b pb-3">
-                    <div>
-                      <p className="font-semibold text-primary">{res.nom}</p>
-                      <p className="text-sm text-gray-500">{res.type_evenement}</p>
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="p-5 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
+              <h3 className="font-black text-primary uppercase text-xs tracking-widest flex items-center gap-2">
+                <span>📩</span> Demandes de prestations
+              </h3>
+            </div>
+            <div className="p-5">
+              {reservations.length === 0 ? (
+                <p className="text-center py-4 text-gray-400 text-sm">Aucune demande reçue</p>
+              ) : (
+                <div className="space-y-4">
+                  {reservations.map((res) => (
+                    <div key={res.id} className="flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 transition border border-transparent hover:border-gray-100">
+                      <div className="max-w-[60%]">
+                        <p className="font-bold text-sm text-gray-800 truncate">{res.nom}</p>
+                        <p className="text-[10px] text-gray-400 font-bold uppercase">{res.type_evenement}</p>
+                      </div>
+                      <span className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tighter ${getStatutColor(res.statut)}`}>
+                        {res.statut}
+                      </span>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatutColor(res.statut)}`}>
-                      {res.statut}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
         </div>
