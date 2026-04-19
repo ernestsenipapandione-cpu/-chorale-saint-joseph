@@ -56,4 +56,4 @@ const Live = () => {
   )
 }
 
-export default Live
+export default Live;
