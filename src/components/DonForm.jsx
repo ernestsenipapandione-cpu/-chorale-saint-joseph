@@ -20,14 +20,13 @@ const DonForm = () => {
         currency: "XOF",
         ref_command: `DON-${Date.now()}`,
         command_name: `Don de ${donForm.nom}`,
-        env: "test", // 👈 CHANGÉ EN TEST POUR VÉRIFICATION
+        env: "live", // 🚀 MODE RÉEL ACTIVÉ
         success_url: `${window.location.origin}/merci`,
         cancel_url: `${window.location.origin}/`,
-        // Optionnel : on peut ajouter le téléphone dans les infos personnalisées
         customer_phone: donForm.telephone 
       };
 
-      // 🚀 APPEL À TON SERVEUR VERCEL (api/paytech.js)
+      // Appel vers ton API Serverless sur Vercel
       const response = await fetch("/api/paytech", {
         method: "POST",
         headers: {
@@ -39,18 +38,17 @@ const DonForm = () => {
       const result = await response.json();
 
       if (result.success === 1) {
-        // ✅ On redirige vers la page de test PayTech
+        // Redirection vers la page de paiement réelle (Orange Money, Wave, etc.)
         window.location.href = result.redirect_url;
       } else {
-        // ❌ Message d'erreur venant de PayTech
         const errorMsg = result.errors ? result.errors[0] : "Erreur de configuration";
-        toast.error("PayTech (Mode Test) : " + errorMsg);
-        console.log("Détails erreur PayTech:", result);
+        toast.error("Paiement : " + errorMsg);
+        console.log("Détails PayTech:", result);
       }
 
     } catch (err) {
       console.error("Erreur:", err);
-      toast.error("Le serveur de paiement ne répond pas.");
+      toast.error("Impossible de joindre le service de paiement.");
     } finally {
       setDonLoading(false)
     }
@@ -59,7 +57,7 @@ const DonForm = () => {
   return (
     <div className="bg-white rounded-2xl shadow p-8 border border-gray-100">
       <h3 className="text-2xl font-bold text-primary mb-2 text-center">💝 Soutenir la Chorale</h3>
-      <p className="text-gray-500 text-center mb-6 text-sm">Mode Test Activé</p>
+      <p className="text-gray-500 text-center mb-6 text-sm">Votre soutien nous aide à grandir</p>
 
       <div className="space-y-4">
         <input 
@@ -87,16 +85,16 @@ const DonForm = () => {
           <button 
             onClick={() => handleDon('Orange Money')}
             disabled={donLoading}
-            className="w-full bg-[#FF7900] text-white py-4 rounded-xl font-bold disabled:opacity-50"
+            className="w-full bg-[#FF7900] text-white py-4 rounded-xl font-bold hover:bg-[#e66d00] transition-colors disabled:opacity-50"
           >
-            {donLoading ? '⏳ Connexion test...' : '🟠 Tester Orange Money'}
+            {donLoading ? '⏳ Connexion...' : '🟠 Payer avec Orange Money'}
           </button>
           <button 
             onClick={() => handleDon('Wave')}
             disabled={donLoading}
-            className="w-full bg-[#1da1f2] text-white py-4 rounded-xl font-bold disabled:opacity-50"
+            className="w-full bg-[#1da1f2] text-white py-4 rounded-xl font-bold hover:bg-[#1a91da] transition-colors disabled:opacity-50"
           >
-            {donLoading ? '⏳ Connexion test...' : '🔵 Tester Wave'}
+            {donLoading ? '⏳ Connexion...' : '🔵 Payer avec Wave'}
           </button>
         </div>
       </div>
