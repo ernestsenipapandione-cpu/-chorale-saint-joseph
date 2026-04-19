@@ -54,16 +54,16 @@ const Sidebar = () => {
   return (
     <>
       {/* BARRE MOBILE (Fixe en haut) */}
-      <div className="md:hidden bg-primary text-white p-4 flex justify-between items-center fixed top-0 left-0 right-0 z-[110] shadow-lg h-[70px]">
+      <div className="md:hidden bg-primary text-white p-4 flex justify-between items-center fixed top-0 left-0 right-0 z-[110] shadow-lg h-[60px]">
         <div className="flex items-center gap-2">
           <span className="text-xl">🎵</span>
           <span className="font-bold text-sm">St Joseph</span>
         </div>
         <button 
           onClick={() => setIsOpen(!isOpen)}
-          className="p-2 bg-blue-800 rounded-lg active:bg-blue-700"
+          className="p-2 bg-blue-800 rounded-lg active:bg-blue-700 focus:outline-none"
         >
-          <span className="text-2xl">{isOpen ? '✕' : '☰'}</span>
+          <span className="text-2xl leading-none">{isOpen ? '✕' : '☰'}</span>
         </button>
       </div>
 
@@ -73,15 +73,18 @@ const Sidebar = () => {
         fixed inset-y-0 left-0 w-64 md:relative md:translate-x-0
         ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
         ${collapsed ? 'md:w-20' : 'md:w-64'} 
-        z-[100] h-full
+        z-[100] h-screen
       `}>
 
-        {/* Logo (PC uniquement) */}
-        <div className="hidden md:flex p-4 items-center justify-between border-b border-blue-800">
+        {/* Espace vide pour compenser la barre mobile (Uniquement quand le menu est ouvert sur mobile) */}
+        <div className="h-[60px] md:hidden shrink-0"></div>
+
+        {/* Logo (Visible sur PC uniquement) */}
+        <div className="hidden md:flex p-4 items-center justify-between border-b border-blue-800 shrink-0">
           {!collapsed && (
             <div className="flex items-center gap-2">
               <span className="text-2xl">🎵</span>
-              <span className="font-bold text-sm text-white">Chorale St Joseph</span>
+              <span className="font-bold text-sm">Chorale St Joseph</span>
             </div>
           )}
           <button
@@ -92,12 +95,15 @@ const Sidebar = () => {
           </button>
         </div>
 
-        {/* Menu avec protection pour le mobile */}
-        <nav className={`
-          flex-1 p-4 space-y-2 overflow-y-auto
-          ${isOpen ? 'pt-[80px]' : 'pt-4'} 
-          md:pt-4
-        `}>
+        {/* Badge Admin (Caché si collapsed sur PC) */}
+        {isAdmin && (
+          <div className={`mx-4 mt-4 bg-secondary rounded-xl px-3 py-2 text-center shrink-0 ${collapsed ? 'md:hidden' : 'block'}`}>
+            <p className="text-xs font-bold truncate text-white">👑 {adminInfo?.nom || 'Admin'}</p>
+          </div>
+        )}
+
+        {/* LISTE DU MENU - Défilement indépendant */}
+        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
           {menuItems.map((item) => {
             if (item.adminOnly && !isAdmin) return null
             
@@ -110,10 +116,10 @@ const Sidebar = () => {
                   navigate(item.path)
                   setIsOpen(false)
                 }}
-                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200
                   ${isActive
                     ? 'bg-secondary text-white shadow-md'
-                    : 'hover:bg-blue-800 text-white/90 hover:text-white'
+                    : 'hover:bg-blue-800 text-white/80 hover:text-white'
                   }`}
               >
                 <span className="text-xl shrink-0">{item.icon}</span>
@@ -125,8 +131,8 @@ const Sidebar = () => {
           })}
         </nav>
 
-        {/* Déconnexion */}
-        <div className="p-4 border-t border-blue-800 bg-primary">
+        {/* Bouton Déconnexion (Fixé en bas) */}
+        <div className="p-4 border-t border-blue-800 bg-primary shrink-0">
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-red-600 transition-colors"
@@ -139,7 +145,7 @@ const Sidebar = () => {
         </div>
       </div>
 
-      {/* Overlay Sombre */}
+      {/* Overlay Sombre (Mobile) */}
       {isOpen && (
         <div 
           className="fixed inset-0 bg-black/60 z-[90] md:hidden backdrop-blur-sm"
