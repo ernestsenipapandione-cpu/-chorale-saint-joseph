@@ -3,7 +3,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: 'Méthode non autorisée' });
   }
 
-  // ⚠️ REMPLACE ICI AVEC TES NOUVELLES CLÉS
+  // Tes nouvelles clés réinitialisées
   const API_KEY = "b00366156ac87ebaf7892bd462e3d7f6f00e7affe9b4024c764a7132429e5e6b"; 
   const API_SECRET = "c9d71a1b5fa3c896cb52b140715b3a5c94da096f4f8090d0b0d058d0e16897d6";
 
@@ -18,20 +18,27 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         item_name: req.body.item_name,
-        item_price: req.body.item_price,
+        // Correction : On s'assure que le prix est envoyé proprement
+        item_price: String(req.body.item_price), 
         currency: "XOF",
         ref_command: req.body.ref_command,
         command_name: req.body.command_name,
-        env: req.body.env,
+        // On utilise "test" par défaut tant que ton compte n'est pas validé par mail
+        env: req.body.env || "test",
         success_url: req.body.success_url,
         cancel_url: req.body.cancel_url
       })
     });
 
     const data = await response.json();
+
+    // Log pour t'aider à débugger dans la console Vercel si besoin
+    console.log("Réponse PayTech:", data);
+
     return res.status(200).json(data);
 
   } catch (error) {
-    return res.status(500).json({ error: "Erreur de communication" });
+    console.error("Erreur API Route:", error);
+    return res.status(500).json({ error: "Erreur de communication avec le serveur de paiement" });
   }
 }
