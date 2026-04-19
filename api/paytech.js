@@ -15,7 +15,6 @@ export default async function handler(req, res) {
         "API_KEY": API_KEY,
         "API_SECRET": API_SECRET
       },
-      // On envoie exactement ce que PayTech attend, ni plus ni moins
       body: JSON.stringify({
         item_name: req.body.item_name,
         item_price: req.body.item_price,
@@ -29,10 +28,9 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
-    
-    // On renvoie la réponse exacte de PayTech
     return res.status(200).json(data);
   } catch (error) {
+    console.error("ERREUR PAYTECH:", error);
     return res.status(500).json({ error: "Erreur de connexion PayTech" });
   }
 }
