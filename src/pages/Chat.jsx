@@ -78,24 +78,25 @@ const Chat = () => {
   return (
     <Layout>
       <Toaster />
-      <div className="p-6 flex flex-col" style={{ height: 'calc(100vh - 0px)' }}>
+      {/* CORRECTION ICI : Utilisation de h-[calc(100dvh-theme(spacing.16))] pour s'adapter au clavier mobile */}
+      <div className="flex flex-col h-[calc(100dvh-80px)] p-4 md:p-6">
 
-        {/* Header */}
-        <div className="mb-4">
-          <h2 className="text-2xl font-bold text-primary">💬 Chat</h2>
-          <p className="text-gray-500">Communiquez avec les membres</p>
+        {/* Header - Réduit un peu les marges pour gagner de la place sur mobile */}
+        <div className="mb-2 md:mb-4">
+          <h2 className="text-xl md:text-2xl font-bold text-primary">💬 Chat</h2>
+          <p className="text-sm text-gray-500">Communiquez avec les membres</p>
         </div>
 
-        {/* Sections */}
-        <div className="flex gap-2 mb-4 flex-wrap">
+        {/* Sections - Ajout de overflow-x-auto pour que ça ne casse pas sur petit écran */}
+        <div className="flex gap-2 mb-4 overflow-x-auto pb-2 no-scrollbar">
           {sections.map((s) => (
             <button
               key={s}
               onClick={() => setSection(s)}
-              className={`px-4 py-2 rounded-xl font-semibold text-sm transition duration-200 ${
+              className={`px-4 py-2 rounded-xl font-semibold text-xs md:text-sm whitespace-nowrap transition duration-200 ${
                 section === s
                   ? 'bg-primary text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-100'
+                  : 'bg-white text-gray-600 shadow-sm hover:bg-gray-100'
               }`}
             >
               {s === 'Général' ? '💬' : '🎵'} {s}
@@ -103,10 +104,10 @@ const Chat = () => {
           ))}
         </div>
 
-        {/* Messages */}
-        <div className="flex-1 bg-white rounded-2xl shadow p-4 overflow-y-auto mb-4">
+        {/* Zone des Messages - flex-1 permet de prendre tout l'espace restant */}
+        <div className="flex-1 bg-white rounded-2xl shadow-inner border border-gray-100 p-4 overflow-y-auto mb-4">
           {messages.length === 0 ? (
-            <p className="text-gray-500 text-center mt-10">
+            <p className="text-gray-400 text-center mt-10 text-sm">
               Aucun message dans {section}
             </p>
           ) : (
@@ -117,18 +118,18 @@ const Chat = () => {
                   message.auteur === user?.email ? 'justify-end' : 'justify-start'
                 }`}
               >
-                <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
+                <div className={`max-w-[85%] md:max-w-md px-4 py-3 rounded-2xl ${
                   message.auteur === user?.email
-                    ? 'bg-primary text-white'
-                    : 'bg-gray-100 text-gray-800'
+                    ? 'bg-primary text-white rounded-tr-none'
+                    : 'bg-gray-100 text-gray-800 rounded-tl-none'
                 }`}>
                   {message.auteur !== user?.email && (
-                    <p className="text-xs font-semibold mb-1 text-primary">
-                      {message.auteur}
+                    <p className="text-[10px] font-bold mb-1 text-primary uppercase tracking-wider">
+                      {message.auteur.split('@')[0]}
                     </p>
                   )}
-                  <p className="text-sm">{message.contenu}</p>
-                  <p className={`text-xs mt-1 ${
+                  <p className="text-sm leading-relaxed">{message.contenu}</p>
+                  <p className={`text-[10px] mt-1 text-right ${
                     message.auteur === user?.email
                       ? 'text-blue-200'
                       : 'text-gray-400'
@@ -145,20 +146,22 @@ const Chat = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input */}
-        <form onSubmit={handleSend} className="flex gap-3">
+        {/* Input Form - Reste fixé en bas de la zone 100dvh */}
+        <form onSubmit={handleSend} className="flex gap-2 bg-white p-1 rounded-2xl shadow-lg border border-gray-200">
           <input
             type="text"
             value={contenu}
             onChange={(e) => setContenu(e.target.value)}
-            placeholder={`Message dans ${section}...`}
-            className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
+            placeholder="Écrire un message..."
+            className="flex-1 px-4 py-3 text-sm focus:outline-none bg-transparent"
           />
           <button
             type="submit"
-            className="bg-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-800 transition duration-300"
+            disabled={!contenu.trim()}
+            className="bg-primary text-white p-3 rounded-xl font-semibold hover:bg-blue-800 transition duration-300 disabled:opacity-50"
           >
-            Envoyer 📤
+            <span className="md:hidden">📤</span>
+            <span className="hidden md:inline">Envoyer</span>
           </button>
         </form>
 
