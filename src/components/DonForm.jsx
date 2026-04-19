@@ -1,70 +1,93 @@
 import React, { useState } from 'react';
-import toast from 'react-hot-toast';
 
 const DonForm = () => {
-  const [donForm, setDonForm] = useState({ nom: '', montant: '' });
-  const [donLoading, setDonLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [montant, setMontant] = useState("");
+  const [nom, setNom] = useState("");
 
-  const handleDon = async () => {
-    if (!donForm.nom || !donForm.montant) {
-      toast.error('Veuillez remplir le nom et le montant !');
-      return;
-    }
+  const handlePayment = async (e) => {
+    e.preventDefault();
+    setLoading(true);
 
-    setDonLoading(true);
+    // Préparation des données pour l'API
+    const paymentData = {
+      item_name: "Don pour la Chorale",
+      item_price: montant,
+      currency: "XOF",
+      ref_command: "CHORALE-" + Date.now(), // Référence unique
+      command_name: `Don de ${nom}`,
+      env: "test", // ⚠️ OBLIGATOIRE : "test" tant que ton compte n'est pas validé
+      success_url: `${window.location.origin}/merci`,
+      cancel_url: `${window.location.origin}/`
+    };
 
     try {
-      const response = await fetch("/api/paytech", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          item_name: "Don Chorale",
-          item_price: donForm.montant,
-          currency: "XOF",
-          ref_command: `DON-${Date.now()}`,
-          command_name: `Don de ${donForm.nom}`,
-          env: "test",
-          success_url: `${window.location.origin}/merci`,
-          cancel_url: `${window.location.origin}/`
-        })
+      // Appel à ton fichier api/paytech.js sur Vercel
+      const response = await fetch('/api/paytech', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(paymentData),
       });
 
-      const result = await response.json();
+      const data = await response.json();
 
-      if (result.success === 1) {
-        window.location.href = result.redirect_url;
+      if (data.redirect_url) {
+        // Redirection vers la page de paiement PayTech (Orange Money, Wave, etc.)
+        window.location.href = data.redirect_url;
       } else {
-        toast.error("Erreur PayTech : " + (result.errors ? result.errors[0] : "Configuration"));
+        // Si PayTech renvoie une erreur (ex: configuration)
+        alert("Erreur PayTech : " + (data.error || "Vérifiez la configuration dans votre compte PayTech"));
+        console.error("Détails erreur:", data);
       }
-    } catch (err) {
-      toast.error("Erreur de connexion.");
+    } catch (error) {
+      console.error("Erreur lors de la requête:", error);
+      alert("Une erreur est survenue lors de la connexion au serveur.");
     } finally {
-      setDonLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 max-w-md mx-auto">
-      <h3 className="text-xl font-bold text-center mb-4 text-blue-900">Faire un don 💝</h3>
-      <div className="space-y-4">
-        <input 
-          type="text" placeholder="Votre nom" 
-          className="w-full px-4 py-3 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500"
-          onChange={(e) => setDonForm({...donForm, nom: e.target.value})}
-        />
-        <input 
-          type="number" placeholder="Montant (FCFA)" 
-          className="w-full px-4 py-3 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500"
-          onChange={(e) => setDonForm({...donForm, montant: e.target.value})}
-        />
-        <button 
-          onClick={handleDon}
-          disabled={donLoading}
-          className="w-full bg-orange-500 text-white py-4 rounded-xl font-bold hover:bg-orange-600 transition-all disabled:opacity-50"
+    <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-xl">
+      <h2 className="text-2xl font-bold mb-4 text-center">Faire un Don</h2>
+      <form onSubmit={handlePayment} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Votre Nom</label>
+          <input
+            type="text"
+            required
+            value={nom}
+            onChange={(e) => setNom(e.target.value)}
+            className="w-full p-2 border rounded-md"
+            placeholder="Ex: Jean Paul"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Montant (FCFA)</label>
+          <input
+            type="number"
+            required
+            value={montant}
+            onChange={(e) => setMontant(e.target.value)}
+            className="w-full p-2 border rounded-md"
+            placeholder="Ex: 5000"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={loading}
+          className={`w-full py-3 px-4 rounded-md text-white font-bold ${
+            loading ? 'bg-gray-400' : 'bg-orange-500 hover:bg-orange-600'
+          } transition duration-200`}
         >
-          {donLoading ? '⏳ Chargement...' : 'Payer avec Orange Money / Wave'}
+          {loading ? "Chargement..." : "Donner via Orange Money / Wave"}
         </button>
-      </div>
+      </form>
+      <p className="mt-4 text-xs text-gray-500 text-center">
+        Paiement sécurisé via PayTech
+      </p>
     </div>
   );
 };
