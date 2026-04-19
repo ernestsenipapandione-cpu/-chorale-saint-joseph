@@ -21,7 +21,7 @@ const DonForm = () => {
         currency: "XOF",
         ref_command: `DON-${Date.now()}`,
         command_name: `Don de ${donForm.nom}`,
-        env: "live", // 🚀 PASSAGE EN MODE RÉEL (LIVE)
+        env: "test", // 🚀 PASSAGE EN MODE RÉEL (LIVE)
         success_url: `${window.location.origin}/merci`,
         cancel_url: `${window.location.origin}/`,
         customer_phone: donForm.telephone 
