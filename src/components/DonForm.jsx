@@ -11,15 +11,15 @@ const DonForm = () => {
 
     // Préparation des données pour l'API
     const paymentData = {
-      item_name: "Don pour la Chorale",
-      item_price: montant,
-      currency: "XOF",
-      ref_command: "CHORALE-" + Date.now(), // Référence unique
-      command_name: `Don de ${nom}`,
-      env: "test", // ⚠️ OBLIGATOIRE : "test" tant que ton compte n'est pas validé
-      success_url: `${window.location.origin}/merci`,
-      cancel_url: `${window.location.origin}/`
-    };
+    item_name: "Don Chorale Saint Joseph",
+    item_price: montant, // Assure-toi que c'est bien la variable de ton état (state)
+    currency: "XOF",
+    ref_command: "CMD_" + Date.now(),
+    command_name: "Donation via Site",
+    env: "test", // ⚠️ Garde "test" ici jusqu'à l'activation par PayTech
+    success_url: `${window.location.origin}/merci`,
+    cancel_url: `${window.location.origin}/`
+};
 
     try {
       // Appel à ton fichier api/paytech.js sur Vercel
