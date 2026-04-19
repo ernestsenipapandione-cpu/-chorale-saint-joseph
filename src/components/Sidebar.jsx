@@ -30,7 +30,7 @@ const Sidebar = () => {
 
   // LISTE DES MENUS CORRIGÉE (Avec le Live ajouté)
   const menuItems = [
-    { icon: '📊', label: 'OK CA MARCHE', path: '/dashboard', adminOnly: false },
+    { icon: '📊', label: ' CA MARCHE', path: '/dashboard', adminOnly: false },
     { icon: '👥', label: 'Membres', path: '/members', adminOnly: false },
     { icon: '📅', label: 'Calendrier', path: '/calendar', adminOnly: false },
     { icon: '🎵', label: 'Partitions', path: '/partitions', adminOnly: false },
