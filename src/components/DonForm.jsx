@@ -20,7 +20,7 @@ const DonForm = () => {
         currency: "XOF",
         ref_command: `DON-${Date.now()}`,
         command_name: `Don de ${donForm.nom}`,
-        env: "test", // 👈 CHANGÉ EN TEST POUR VÉRIFICATION
+        env: "live", // 👈 CHANGÉ EN TEST POUR VÉRIFICATION
         success_url: `${window.location.origin}/merci`,
         cancel_url: `${window.location.origin}/`,
         // Optionnel : on peut ajouter le téléphone dans les infos personnalisées
