@@ -53,102 +53,96 @@ const Sidebar = () => {
 
   return (
     <>
-      {/* BARRE MOBILE (Fixe en haut) */}
-      <div className="md:hidden bg-primary text-white p-4 flex justify-between items-center fixed top-0 left-0 right-0 z-[110] shadow-lg h-[60px]">
+      {/* BARRE MOBILE (Z-index maximum) */}
+      <div className="md:hidden bg-primary text-white p-4 flex justify-between items-center fixed top-0 left-0 right-0 z-[200] h-[70px] shadow-xl">
         <div className="flex items-center gap-2">
           <span className="text-xl">🎵</span>
-          <span className="font-bold text-sm">St Joseph</span>
+          <span className="font-bold text-sm uppercase tracking-wider">St Joseph</span>
         </div>
         <button 
           onClick={() => setIsOpen(!isOpen)}
-          className="p-2 bg-blue-800 rounded-lg active:bg-blue-700 focus:outline-none"
+          className="p-2 bg-blue-700 rounded-lg active:scale-95 transition-transform"
         >
-          <span className="text-2xl leading-none">{isOpen ? '✕' : '☰'}</span>
+          <span className="text-2xl font-mono">{isOpen ? '✕' : '☰'}</span>
         </button>
       </div>
 
       {/* SIDEBAR */}
       <div className={`
         bg-primary text-white transition-all duration-300 flex flex-col
-        fixed inset-y-0 left-0 w-64 md:relative md:translate-x-0
+        fixed inset-y-0 left-0 w-72 md:relative md:translate-x-0
         ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
         ${collapsed ? 'md:w-20' : 'md:w-64'} 
-        z-[100] h-screen
+        z-[150] h-screen
       `}>
 
-        {/* Espace vide pour compenser la barre mobile (Uniquement quand le menu est ouvert sur mobile) */}
-        <div className="h-[60px] md:hidden shrink-0"></div>
+        {/* CONTENU SCROLLABLE */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          
+          {/* Logo (PC seulement) */}
+          <div className="hidden md:flex p-6 items-center justify-between border-b border-white/10 shrink-0">
+            {!collapsed && <span className="font-bold">Chorale St Joseph</span>}
+            <button onClick={() => setCollapsed(!collapsed)} className="ml-auto">
+              {collapsed ? '→' : '←'}
+            </button>
+          </div>
 
-        {/* Logo (Visible sur PC uniquement) */}
-        <div className="hidden md:flex p-4 items-center justify-between border-b border-blue-800 shrink-0">
-          {!collapsed && (
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">🎵</span>
-              <span className="font-bold text-sm">Chorale St Joseph</span>
+          {/* ZONE DE MENU */}
+          <nav className="flex-1 overflow-y-auto px-4">
+            {/* MARGE DE SÉCURITÉ POUR MOBILE PORTRAIT */}
+            <div className="h-[90px] md:hidden"></div>
+
+            {isAdmin && (
+              <div className={`mb-6 bg-blue-800/50 rounded-xl p-3 text-center ${collapsed ? 'md:hidden' : ''}`}>
+                <p className="text-xs font-bold truncate">👑 {adminInfo?.nom || 'Admin'}</p>
+              </div>
+            )}
+
+            <div className="space-y-2 pb-10">
+              {menuItems.map((item) => {
+                if (item.adminOnly && !isAdmin) return null
+                const isActive = location.pathname === item.path
+                
+                return (
+                  <button
+                    key={item.path}
+                    onClick={() => {
+                      navigate(item.path)
+                      setIsOpen(false)
+                    }}
+                    className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-all
+                      ${isActive
+                        ? 'bg-secondary text-white shadow-lg scale-[1.02]'
+                        : 'hover:bg-white/5 text-white/70'
+                      }`}
+                  >
+                    <span className="text-2xl shrink-0">{item.icon}</span>
+                    <span className={`font-medium ${collapsed ? 'md:hidden' : 'block'}`}>
+                      {item.label}
+                    </span>
+                  </button>
+                )
+              })}
             </div>
-          )}
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="text-white hover:text-secondary ml-auto"
-          >
-            {collapsed ? '→' : '←'}
-          </button>
+          </nav>
         </div>
 
-        {/* Badge Admin (Caché si collapsed sur PC) */}
-        {isAdmin && (
-          <div className={`mx-4 mt-4 bg-secondary rounded-xl px-3 py-2 text-center shrink-0 ${collapsed ? 'md:hidden' : 'block'}`}>
-            <p className="text-xs font-bold truncate text-white">👑 {adminInfo?.nom || 'Admin'}</p>
-          </div>
-        )}
-
-        {/* LISTE DU MENU - Défilement indépendant */}
-        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
-          {menuItems.map((item) => {
-            if (item.adminOnly && !isAdmin) return null
-            
-            const isActive = location.pathname === item.path
-            
-            return (
-              <button
-                key={item.path}
-                onClick={() => {
-                  navigate(item.path)
-                  setIsOpen(false)
-                }}
-                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200
-                  ${isActive
-                    ? 'bg-secondary text-white shadow-md'
-                    : 'hover:bg-blue-800 text-white/80 hover:text-white'
-                  }`}
-              >
-                <span className="text-xl shrink-0">{item.icon}</span>
-                <span className={`text-sm font-medium whitespace-nowrap ${collapsed ? 'md:hidden' : 'block'}`}>
-                  {item.label}
-                </span>
-              </button>
-            )
-          })}
-        </nav>
-
-        {/* Bouton Déconnexion (Fixé en bas) */}
-        <div className="p-4 border-t border-blue-800 bg-primary shrink-0">
+        {/* PIED DE MENU (Déconnexion) */}
+        <div className="p-4 border-t border-white/10 bg-primary shrink-0">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-red-600 transition-colors"
+            className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-red-500/20 text-red-400 transition-colors"
           >
-            <span className="text-xl shrink-0">🚪</span>
-            <span className={`text-sm font-medium ${collapsed ? 'md:hidden' : 'block'}`}>
-              Déconnexion
-            </span>
+            <span className="text-2xl">🚪</span>
+            <span className={`${collapsed ? 'md:hidden' : 'block'} font-medium`}>Déconnexion</span>
           </button>
         </div>
       </div>
 
-      {/* Overlay Sombre (Mobile) */}
+      {/* OVERLAY */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/60 z-[90] md:hidden backdrop-blur-sm"
+          className="fixed inset-0 bg-black/70 z-[140] md:hidden backdrop-blur-md"
           onClick={() => setIsOpen(false)}
         ></div>
       )}
