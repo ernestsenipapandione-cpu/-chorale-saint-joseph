@@ -1,267 +1,167 @@
-import React, { useEffect, useState } from 'react'
-import { supabase } from '../supabase/client'
-import Layout from '../components/Layout'
-import toast, { Toaster } from 'react-hot-toast'
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../supabaseClient';
+import { toast } from 'react-hot-toast';
 
 const Partitions = () => {
-  const [partitions, setPartitions] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
-  const [uploading, setUploading] = useState(false)
+  const [partitions, setPartitions] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [form, setForm] = useState({
     titre: '',
     compositeur: '',
     voix: '',
-    fichier_url: '',
-  })
+    fichier_url: ''
+  });
 
   useEffect(() => {
-    fetchPartitions()
-  }, [])
+    fetchPartitions();
+  }, []);
 
   const fetchPartitions = async () => {
-    setLoading(true)
     const { data, error } = await supabase
       .from('partitions')
       .select('*')
-      .order('created_at', { ascending: false })
-    if (error) {
-      toast.error('Erreur lors du chargement des partitions')
-    } else {
-      setPartitions(data)
-    }
-    setLoading(false)
-  }
+      .order('created_at', { ascending: false });
+    
+    if (error) toast.error('Erreur lors du chargement');
+    else setPartitions(data || []);
+  };
 
   const handleFileUpload = async (e) => {
-    const file = e.target.files[0]
-    if (!file) return
+    try {
+      setUploading(true);
+      const file = e.target.files[0];
+      if (!file) return;
 
-    setUploading(true)
-    const fileName = `${Date.now()}_${file.name}`
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `${fileName}`;
 
-    const { data, error } = await supabase.storage
-      .from('partitions')
-      .upload(fileName, file)
+      // UTILISATION DE "Partitions" AVEC MAJUSCULE ICI
+      const { error: uploadError } = await supabase.storage
+        .from('Partitions')
+        .upload(filePath, file);
 
-    if (error) {
-      toast.error('Erreur lors de l\'upload : ' + error.message)
-    } else {
+      if (uploadError) throw uploadError;
+
+      // RÉCUPÉRATION DE L'URL AVEC "Partitions" AUSSI
       const { data: urlData } = supabase.storage
-        .from('partitions')
-        .getPublicUrl(fileName)
-      setForm({ ...form, fichier_url: urlData.publicUrl })
-      toast.success('Fichier uploadé avec succès !')
+        .from('Partitions')
+        .getPublicUrl(filePath);
+
+      setForm({ ...form, fichier_url: urlData.publicUrl });
+      toast.success('Fichier uploadé avec succès !');
+    } catch (error) {
+      console.error(error);
+      toast.error("Erreur Upload: " + error.message);
+    } finally {
+      setUploading(false);
     }
-    setUploading(false)
-  }
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
+    setLoading(true);
+
     if (!form.fichier_url) {
-        toast.error('Veuillez uploader un fichier ou entrer un lien');
-        return;
+      toast.error('Attendez que le fichier soit uploadé ou entrez un lien');
+      setLoading(false);
+      return;
     }
+
     const { error } = await supabase
       .from('partitions')
-      .insert([form])
+      .insert([form]);
+
     if (error) {
-      toast.error('Erreur lors de l\'ajout de la partition')
+      toast.error("Erreur Base de données: " + error.message);
     } else {
-      toast.success('Partition ajoutée avec succès !')
-      setShowForm(false)
-      setForm({
-        titre: '',
-        compositeur: '',
-        voix: '',
-        fichier_url: '',
-      })
-      fetchPartitions()
+      toast.success('Partition ajoutée !');
+      setForm({ titre: '', compositeur: '', voix: '', fichier_url: '' });
+      fetchPartitions();
     }
-  }
-
-  const handleDelete = async (id) => {
-    if (window.confirm("Supprimer cette partition ?")) {
-        const { error } = await supabase
-          .from('partitions')
-          .delete()
-          .eq('id', id)
-        if (error) {
-          toast.error('Erreur lors de la suppression')
-        } else {
-          toast.success('Partition supprimée !')
-          fetchPartitions()
-        }
-    }
-  }
-
-  const getVoixColor = (voix) => {
-    switch (voix) {
-      case 'Soprano': return 'bg-pink-100 text-pink-600'
-      case 'Alto': return 'bg-purple-100 text-purple-600'
-      case 'Ténor': return 'bg-blue-100 text-blue-600'
-      case 'Basse': return 'bg-green-100 text-green-600'
-      default: return 'bg-gray-100 text-gray-600'
-    }
-  }
-
-  const getFileIcon = (url) => {
-    if (!url) return '📄'
-    const lowerUrl = url.toLowerCase();
-    if (lowerUrl.includes('.pdf')) return '📕'
-    if (lowerUrl.includes('.mp3') || lowerUrl.includes('.wav') || lowerUrl.includes('.mpeg')) return '🎶'
-    if (lowerUrl.includes('.jpg') || lowerUrl.includes('.png') || lowerUrl.includes('.jpeg')) return '🖼️'
-    return '📁'
-  }
+    setLoading(false);
+  };
 
   return (
-    <Layout>
-      <Toaster />
-      <div className="p-4 md:p-6">
+    <div className="p-6">
+      <h2 className="text-2xl font-bold mb-6">Gestion des Partitions</h2>
 
-        {/* Header Responsive */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-          <div>
-            <h2 className="text-xl md:text-2xl font-bold text-primary">🎵 Partitions</h2>
-            <p className="text-sm text-gray-500">Bibliothèque de la chorale</p>
-          </div>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="w-full md:w-auto bg-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-800 transition"
+      <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <input
+            type="text"
+            placeholder="Titre de l'œuvre"
+            className="p-2 border rounded"
+            value={form.titre}
+            onChange={(e) => setForm({...form, titre: e.target.value})}
+            required
+          />
+          <input
+            type="text"
+            placeholder="Compositeur"
+            className="p-2 border rounded"
+            value={form.compositeur}
+            onChange={(e) => setForm({...form, compositeur: e.target.value})}
+          />
+          <select 
+            className="p-2 border rounded"
+            value={form.voix}
+            onChange={(e) => setForm({...form, voix: e.target.value})}
+            required
           >
-            {showForm ? '✕ Fermer' : '+ Ajouter une partition'}
-          </button>
-        </div>
-
-        {/* Formulaire Responsive */}
-        {showForm && (
-          <div className="bg-white rounded-2xl shadow-sm p-5 mb-6 border border-gray-100">
-            <h3 className="text-lg font-bold text-primary mb-4">Nouvelle partition</h3>
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Titre de l'œuvre</label>
-                <input
-                  type="text"
-                  value={form.titre}
-                  onChange={(e) => setForm({ ...form, titre: e.target.value })}
-                  required
-                  placeholder="Ex: Ave Maria"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary outline-none text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Compositeur</label>
-                <input
-                  type="text"
-                  value={form.compositeur}
-                  onChange={(e) => setForm({ ...form, compositeur: e.target.value })}
-                  placeholder="Ex: Gounod / Bach"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary outline-none text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Voix concernée</label>
-                <select
-                  value={form.voix}
-                  onChange={(e) => setForm({ ...form, voix: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-xl outline-none text-sm"
-                >
-                  <option value="">Toutes les voix</option>
-                  <option value="Soprano">Soprano</option>
-                  <option value="Alto">Alto</option>
-                  <option value="Ténor">Ténor</option>
-                  <option value="Basse">Basse</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Fichier (PDF, Audio, Image)</label>
-                <input
-                  type="file"
-                  accept=".pdf,.mp3,.wav,.jpg,.jpeg,.png"
-                  onChange={handleFileUpload}
-                  className="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-primary hover:file:bg-blue-100"
-                />
-                {uploading && <p className="text-xs text-primary mt-1 animate-pulse font-bold">⏳ Upload en cours...</p>}
-                {form.fichier_url && !uploading && <p className="text-xs text-green-600 mt-1 font-bold">✅ Fichier prêt</p>}
-              </div>
-
-              <div className="md:col-span-2">
-                <button
-                  type="submit"
-                  disabled={uploading}
-                  className="w-full bg-primary text-white py-3 rounded-xl font-bold hover:bg-blue-800 transition disabled:opacity-50"
-                >
-                  Enregistrer la partition
-                </button>
-              </div>
-            </form>
+            <option value="">Choisir la voix</option>
+            <option value="Soprano">Soprano</option>
+            <option value="Alto">Alto</option>
+            <option value="Ténor">Ténor</option>
+            <option value="Basse">Basse</option>
+            <option value="Tout le chœur">Tout le chœur</option>
+          </select>
+          
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-semibold text-gray-600">Télécharger le fichier :</label>
+            <input
+              type="file"
+              onChange={handleFileUpload}
+              disabled={uploading}
+              className="text-sm"
+            />
+            {uploading && <span className="text-blue-500">Upload en cours...</span>}
           </div>
-        )}
-
-        {/* Liste des partitions en Cartes (Grid) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {loading ? (
-            <p className="text-center col-span-full py-10 text-gray-400">Chargement de la bibliothèque...</p>
-          ) : partitions.length === 0 ? (
-            <p className="text-center col-span-full py-10 text-gray-400">Aucune partition disponible.</p>
-          ) : (
-            partitions.map((partition) => (
-              <div key={partition.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex flex-col justify-between hover:shadow-md transition">
-                <div>
-                  <div className="flex justify-between items-start mb-4">
-                    <span className="text-4xl bg-gray-50 w-12 h-12 flex items-center justify-center rounded-xl">
-                      {getFileIcon(partition.fichier_url)}
-                    </span>
-                    {partition.voix && (
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${getVoixColor(partition.voix)}`}>
-                        {partition.voix}
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="text-lg font-bold text-gray-800 leading-tight mb-1">{partition.titre}</h3>
-                  <p className="text-sm text-gray-500 mb-4 italic">
-                    {partition.compositeur ? `🎼 ${partition.compositeur}` : '🎼 Compositeur inconnu'}
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  {partition.fichier_url ? (
-                    <div className="flex gap-2">
-                      <a
-                        href={partition.fichier_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 bg-primary/10 text-primary py-2.5 rounded-xl text-xs font-bold text-center hover:bg-primary hover:text-white transition"
-                      >
-                        Ouvrir
-                      </a>
-                      <a
-                        href={partition.fichier_url}
-                        download
-                        className="flex-1 bg-secondary text-white py-2.5 rounded-xl text-xs font-bold text-center hover:bg-yellow-500 transition"
-                      >
-                        Télécharger
-                      </a>
-                    </div>
-                  ) : (
-                    <p className="text-xs text-red-400 text-center italic">Lien manquant</p>
-                  )}
-                  
-                  <button
-                    onClick={() => handleDelete(partition.id)}
-                    className="w-full py-2 text-xs font-bold text-gray-400 hover:text-red-500 transition border-t border-gray-50 mt-2"
-                  >
-                    🗑️ Supprimer de la liste
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
         </div>
-      </div>
-    </Layout>
-  )
-}
+        
+        <button 
+          type="submit" 
+          disabled={loading || uploading}
+          className="mt-6 bg-indigo-600 text-white px-6 py-2 rounded hover:bg-indigo-700 disabled:opacity-50"
+        >
+          {loading ? 'Enregistrement...' : 'Ajouter la partition'}
+        </button>
+      </form>
 
-export default Partitions
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {partitions.map((part) => (
+          <div key={part.id} className="bg-white p-4 rounded shadow border-l-4 border-indigo-500">
+            <h3 className="font-bold text-lg">{part.titre}</h3>
+            <p className="text-gray-600">{part.compositeur}</p>
+            <span className="inline-block bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded mt-2">
+              {part.voix}
+            </span>
+            <div className="mt-4">
+              <a 
+                href={part.fichier_url} 
+                target="_blank" 
+                rel="noreferrer"
+                className="text-indigo-600 hover:underline font-medium"
+              >
+                Voir le fichier 📄
+              </a>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default Partitions;
