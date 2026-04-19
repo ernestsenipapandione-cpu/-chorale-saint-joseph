@@ -19,16 +19,10 @@ const Sidebar = () => {
         try {
           const { data: { user } } = await supabase.auth.getUser()
           if (user) {
-            const { data } = await supabase
-              .from('admins')
-              .select('*')
-              .eq('email', user.email)
-              .single()
+            const { data } = await supabase.from('admins').select('*').eq('email', user.email).single()
             setAdminInfo(data)
           }
-        } catch (err) {
-          console.error("Erreur admin info:", err)
-        }
+        } catch (err) { console.error(err) }
       }
     }
     getAdmin()
@@ -53,96 +47,83 @@ const Sidebar = () => {
 
   return (
     <>
-      {/* BARRE MOBILE (Z-index maximum) */}
-      <div className="md:hidden bg-primary text-white p-4 flex justify-between items-center fixed top-0 left-0 right-0 z-[200] h-[70px] shadow-xl">
+      {/* 1. LA BARRE BLEUE MOBILE (Toujours au-dessus de tout) */}
+      <div className="md:hidden bg-primary text-white p-4 flex justify-between items-center fixed top-0 left-0 right-0 z-[200] h-[60px]">
         <div className="flex items-center gap-2">
           <span className="text-xl">🎵</span>
-          <span className="font-bold text-sm uppercase tracking-wider">St Joseph</span>
+          <span className="font-bold">St Joseph</span>
         </div>
-        <button 
-          onClick={() => setIsOpen(!isOpen)}
-          className="p-2 bg-blue-700 rounded-lg active:scale-95 transition-transform"
-        >
-          <span className="text-2xl font-mono">{isOpen ? '✕' : '☰'}</span>
+        <button onClick={() => setIsOpen(!isOpen)} className="p-2 bg-blue-700 rounded-lg">
+          <span className="text-2xl">{isOpen ? '✕' : '☰'}</span>
         </button>
       </div>
 
-      {/* SIDEBAR */}
+      {/* 2. LA SIDEBAR (Menu qui coulisse) */}
       <div className={`
-        bg-primary text-white transition-all duration-300 flex flex-col
-        fixed inset-y-0 left-0 w-72 md:relative md:translate-x-0
-        ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
-        ${collapsed ? 'md:w-20' : 'md:w-64'} 
-        z-[150] h-screen
+        fixed inset-0 z-[150] transition-transform duration-300 md:relative md:translate-x-0
+        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+        flex flex-col bg-primary text-white
+        w-64 md:w-${collapsed ? '20' : '64'} h-screen
       `}>
-
-        {/* CONTENU SCROLLABLE */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          
-          {/* Logo (PC seulement) */}
-          <div className="hidden md:flex p-6 items-center justify-between border-b border-white/10 shrink-0">
-            {!collapsed && <span className="font-bold">Chorale St Joseph</span>}
-            <button onClick={() => setCollapsed(!collapsed)} className="ml-auto">
-              {collapsed ? '→' : '←'}
-            </button>
+        
+        {/* A. EN-TÊTE DU MENU (Logo sur PC, Espace vide sur Mobile) */}
+        <div className="shrink-0 h-[60px] flex items-center px-6 border-b border-white/10">
+          <div className="hidden md:flex items-center gap-2">
+             {!collapsed && <span className="font-bold">Chorale St Joseph</span>}
           </div>
+          <button onClick={() => setCollapsed(!collapsed)} className="hidden md:block ml-auto">
+            {collapsed ? '→' : '←'}
+          </button>
+          {/* Sur mobile, cet espace de 60px empêche le Dashboard de se cacher sous la barre bleue */}
+          <span className="md:hidden font-bold">Menu</span>
+        </div>
 
-          {/* ZONE DE MENU */}
-          <nav className="flex-1 overflow-y-auto px-4">
-            {/* MARGE DE SÉCURITÉ POUR MOBILE PORTRAIT */}
-            <div className="h-[90px] md:hidden"></div>
-
-            {isAdmin && (
-              <div className={`mb-6 bg-blue-800/50 rounded-xl p-3 text-center ${collapsed ? 'md:hidden' : ''}`}>
-                <p className="text-xs font-bold truncate">👑 {adminInfo?.nom || 'Admin'}</p>
-              </div>
-            )}
-
-            <div className="space-y-2 pb-10">
-              {menuItems.map((item) => {
-                if (item.adminOnly && !isAdmin) return null
-                const isActive = location.pathname === item.path
-                
-                return (
-                  <button
-                    key={item.path}
-                    onClick={() => {
-                      navigate(item.path)
-                      setIsOpen(false)
-                    }}
-                    className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-all
-                      ${isActive
-                        ? 'bg-secondary text-white shadow-lg scale-[1.02]'
-                        : 'hover:bg-white/5 text-white/70'
-                      }`}
-                  >
-                    <span className="text-2xl shrink-0">{item.icon}</span>
-                    <span className={`font-medium ${collapsed ? 'md:hidden' : 'block'}`}>
-                      {item.label}
-                    </span>
-                  </button>
-                )
-              })}
+        {/* B. CORPS DU MENU (C'est cette partie qui doit défiler) */}
+        <div className="flex-1 overflow-y-auto pt-4 pb-4 px-3">
+          {isAdmin && (
+            <div className="mb-4 bg-blue-800/40 rounded-lg p-2 text-center">
+              <p className="text-xs font-bold truncate">👑 {adminInfo?.nom}</p>
             </div>
+          )}
+
+          <nav className="flex flex-col gap-1">
+            {menuItems.map((item) => {
+              if (item.adminOnly && !isAdmin) return null
+              const isActive = location.pathname === item.path
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => { navigate(item.path); setIsOpen(false); }}
+                  className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-colors
+                    ${isActive ? 'bg-secondary text-white' : 'hover:bg-white/10 text-white/70'}
+                  `}
+                >
+                  <span className="text-xl shrink-0">{item.icon}</span>
+                  <span className={`text-sm font-medium ${collapsed ? 'md:hidden' : 'block'}`}>
+                    {item.label}
+                  </span>
+                </button>
+              )
+            })}
           </nav>
         </div>
 
-        {/* PIED DE MENU (Déconnexion) */}
-        <div className="p-4 border-t border-white/10 bg-primary shrink-0">
+        {/* C. PIED DU MENU (Déconnexion toujours en bas) */}
+        <div className="shrink-0 p-4 border-t border-white/10">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-red-500/20 text-red-400 transition-colors"
+            className="w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-red-500/20 text-red-400"
           >
-            <span className="text-2xl">🚪</span>
-            <span className={`${collapsed ? 'md:hidden' : 'block'} font-medium`}>Déconnexion</span>
+            <span className="text-xl">🚪</span>
+            <span className={`${collapsed ? 'md:hidden' : 'block'}`}>Déconnexion</span>
           </button>
         </div>
       </div>
 
-      {/* OVERLAY */}
+      {/* 3. L'OVERLAY (Fond noir pour fermer) */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/70 z-[140] md:hidden backdrop-blur-md"
+          className="fixed inset-0 bg-black/60 z-[140] md:hidden backdrop-blur-sm"
           onClick={() => setIsOpen(false)}
         ></div>
       )}
