@@ -58,6 +58,10 @@ const Partitions = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!form.fichier_url) {
+        toast.error('Veuillez uploader un fichier ou entrer un lien');
+        return;
+    }
     const { error } = await supabase
       .from('partitions')
       .insert([form])
@@ -77,15 +81,17 @@ const Partitions = () => {
   }
 
   const handleDelete = async (id) => {
-    const { error } = await supabase
-      .from('partitions')
-      .delete()
-      .eq('id', id)
-    if (error) {
-      toast.error('Erreur lors de la suppression')
-    } else {
-      toast.success('Partition supprimée !')
-      fetchPartitions()
+    if (window.confirm("Supprimer cette partition ?")) {
+        const { error } = await supabase
+          .from('partitions')
+          .delete()
+          .eq('id', id)
+        if (error) {
+          toast.error('Erreur lors de la suppression')
+        } else {
+          toast.success('Partition supprimée !')
+          fetchPartitions()
+        }
     }
   }
 
@@ -101,61 +107,64 @@ const Partitions = () => {
 
   const getFileIcon = (url) => {
     if (!url) return '📄'
-    if (url.includes('.pdf')) return '📄'
-    if (url.includes('.mp3') || url.includes('.wav') || url.includes('.mpeg')) return '🎵'
-    if (url.includes('.jpg') || url.includes('.png') || url.includes('.jpeg')) return '🖼️'
+    const lowerUrl = url.toLowerCase();
+    if (lowerUrl.includes('.pdf')) return '📕'
+    if (lowerUrl.includes('.mp3') || lowerUrl.includes('.wav') || lowerUrl.includes('.mpeg')) return '🎶'
+    if (lowerUrl.includes('.jpg') || lowerUrl.includes('.png') || lowerUrl.includes('.jpeg')) return '🖼️'
     return '📁'
   }
 
   return (
     <Layout>
       <Toaster />
-      <div className="p-6">
+      <div className="p-4 md:p-6">
 
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
+        {/* Header Responsive */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-primary">🎵 Partitions</h2>
-            <p className="text-gray-500">Bibliothèque de partitions de la chorale</p>
+            <h2 className="text-xl md:text-2xl font-bold text-primary">🎵 Partitions</h2>
+            <p className="text-sm text-gray-500">Bibliothèque de la chorale</p>
           </div>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="bg-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-800 transition duration-300"
+            className="w-full md:w-auto bg-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-800 transition"
           >
             {showForm ? '✕ Fermer' : '+ Ajouter une partition'}
           </button>
         </div>
 
-        {/* Formulaire */}
+        {/* Formulaire Responsive */}
         {showForm && (
-          <div className="bg-white rounded-2xl shadow p-6 mb-6">
-            <h3 className="text-xl font-bold text-primary mb-4">Nouvelle partition</h3>
+          <div className="bg-white rounded-2xl shadow-sm p-5 mb-6 border border-gray-100">
+            <h3 className="text-lg font-bold text-primary mb-4">Nouvelle partition</h3>
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Titre</label>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Titre de l'œuvre</label>
                 <input
                   type="text"
                   value={form.titre}
                   onChange={(e) => setForm({ ...form, titre: e.target.value })}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Ex: Ave Maria"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary outline-none text-sm"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Compositeur</label>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Compositeur</label>
                 <input
                   type="text"
                   value={form.compositeur}
                   onChange={(e) => setForm({ ...form, compositeur: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Ex: Gounod / Bach"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary outline-none text-sm"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Voix</label>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Voix concernée</label>
                 <select
                   value={form.voix}
                   onChange={(e) => setForm({ ...form, voix: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-xl outline-none text-sm"
                 >
                   <option value="">Toutes les voix</option>
                   <option value="Soprano">Soprano</option>
@@ -165,105 +174,91 @@ const Partitions = () => {
                 </select>
               </div>
 
-              {/* Upload fichier */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Uploader un fichier (PDF, MP3, Image)
-                </label>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Fichier (PDF, Audio, Image)</label>
                 <input
                   type="file"
                   accept=".pdf,.mp3,.wav,.jpg,.jpeg,.png"
                   onChange={handleFileUpload}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-primary hover:file:bg-blue-100"
                 />
-                {uploading && (
-                  <p className="text-sm text-primary mt-1">⏳ Upload en cours...</p>
-                )}
-                {form.fichier_url && (
-                  <p className="text-sm text-green-600 mt-1">✅ Fichier uploadé !</p>
-                )}
-              </div>
-
-              {/* Ou lien URL */}
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Ou entrer un lien URL
-                </label>
-                <input
-                  type="text"
-                  value={form.fichier_url}
-                  onChange={(e) => setForm({ ...form, fichier_url: e.target.value })}
-                  placeholder="https://..."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
-                />
+                {uploading && <p className="text-xs text-primary mt-1 animate-pulse font-bold">⏳ Upload en cours...</p>}
+                {form.fichier_url && !uploading && <p className="text-xs text-green-600 mt-1 font-bold">✅ Fichier prêt</p>}
               </div>
 
               <div className="md:col-span-2">
                 <button
                   type="submit"
                   disabled={uploading}
-                  className="w-full bg-primary text-white py-3 rounded-xl font-semibold hover:bg-blue-800 transition duration-300 disabled:opacity-50"
+                  className="w-full bg-primary text-white py-3 rounded-xl font-bold hover:bg-blue-800 transition disabled:opacity-50"
                 >
-                  Ajouter la partition
+                  Enregistrer la partition
                 </button>
               </div>
             </form>
           </div>
         )}
 
-        {/* Liste des partitions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Liste des partitions en Cartes (Grid) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {loading ? (
-            <p className="text-gray-500">Chargement...</p>
+            <p className="text-center col-span-full py-10 text-gray-400">Chargement de la bibliothèque...</p>
           ) : partitions.length === 0 ? (
-            <p className="text-gray-500">Aucune partition pour le moment</p>
+            <p className="text-center col-span-full py-10 text-gray-400">Aucune partition disponible.</p>
           ) : (
             partitions.map((partition) => (
-              <div key={partition.id} className="bg-white rounded-2xl shadow p-6">
-                <div className="flex justify-between items-start mb-3">
-                  <span className="text-3xl">{getFileIcon(partition.fichier_url)}</span>
-                  {partition.voix && (
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getVoixColor(partition.voix)}`}>
-                      {partition.voix}
+              <div key={partition.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex flex-col justify-between hover:shadow-md transition">
+                <div>
+                  <div className="flex justify-between items-start mb-4">
+                    <span className="text-4xl bg-gray-50 w-12 h-12 flex items-center justify-center rounded-xl">
+                      {getFileIcon(partition.fichier_url)}
                     </span>
-                  )}
+                    {partition.voix && (
+                      <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${getVoixColor(partition.voix)}`}>
+                        {partition.voix}
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-800 leading-tight mb-1">{partition.titre}</h3>
+                  <p className="text-sm text-gray-500 mb-4 italic">
+                    {partition.compositeur ? `🎼 ${partition.compositeur}` : '🎼 Compositeur inconnu'}
+                  </p>
                 </div>
-                <h3 className="text-lg font-bold text-primary mb-1">{partition.titre}</h3>
-                {partition.compositeur && (
-                  <p className="text-gray-500 text-sm mb-3">🎼 {partition.compositeur}</p>
-                )}
-                <div className="flex gap-2 mt-4">
-                  {partition.fichier_url && (
-                    <>
+
+                <div className="space-y-2">
+                  {partition.fichier_url ? (
+                    <div className="flex gap-2">
                       <a
                         href={partition.fichier_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 bg-primary text-white py-2 rounded-xl text-sm font-semibold text-center hover:bg-blue-800 transition"
+                        className="flex-1 bg-primary/10 text-primary py-2.5 rounded-xl text-xs font-bold text-center hover:bg-primary hover:text-white transition"
                       >
-                        👁️ Voir
+                        Ouvrir
                       </a>
                       <a
                         href={partition.fichier_url}
                         download
-                        className="flex-1 bg-secondary text-white py-2 rounded-xl text-sm font-semibold text-center hover:bg-yellow-500 transition"
+                        className="flex-1 bg-secondary text-white py-2.5 rounded-xl text-xs font-bold text-center hover:bg-yellow-500 transition"
                       >
-                        ⬇️ Télécharger
+                        Télécharger
                       </a>
-                    </>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-red-400 text-center italic">Lien manquant</p>
                   )}
+                  
                   <button
                     onClick={() => handleDelete(partition.id)}
-                    className="bg-red-100 text-red-500 px-3 py-2 rounded-xl text-sm font-semibold hover:bg-red-200 transition"
+                    className="w-full py-2 text-xs font-bold text-gray-400 hover:text-red-500 transition border-t border-gray-50 mt-2"
                   >
-                    🗑️
+                    🗑️ Supprimer de la liste
                   </button>
                 </div>
               </div>
             ))
           )}
         </div>
-
       </div>
     </Layout>
   )
