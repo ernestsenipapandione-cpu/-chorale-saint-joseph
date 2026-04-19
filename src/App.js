@@ -1,6 +1,6 @@
 import React from 'react'
 import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom'
-import Layout from './Layout'
+import Layout from './components/Layout' // Chemin corrigé
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Members from './pages/Members'
@@ -14,7 +14,6 @@ import Finances from './pages/Finances'
 import Settings from './pages/Settings'
 import Merci from './pages/Merci'
 
-// Un petit composant pour protéger les pages avec le Layout
 const DashboardLayout = () => (
   <Layout>
     <Outlet />
@@ -25,13 +24,11 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* ROUTES SANS SIDEBAR (Public) */}
         <Route path="/" element={<Contact />} />
         <Route path="/login" element={<Login />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/merci" element={<Merci />} />
 
-        {/* ROUTES AVEC SIDEBAR (Privé) */}
         <Route element={<DashboardLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/members" element={<Members />} />

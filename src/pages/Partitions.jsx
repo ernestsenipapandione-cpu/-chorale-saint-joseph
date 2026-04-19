@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
+import { supabase } from '../supabase/client'; // Chemin corrigé
 import { toast } from 'react-hot-toast';
 
 const Partitions = () => {
@@ -37,22 +37,19 @@ const Partitions = () => {
       const fileName = `${Math.random()}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      // UTILISATION DE "Partitions" AVEC MAJUSCULE ICI
       const { error: uploadError } = await supabase.storage
-        .from('Partitions')
+        .from('partitions') // Mis en minuscule pour correspondre à ta base
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
-      // RÉCUPÉRATION DE L'URL AVEC "Partitions" AUSSI
       const { data: urlData } = supabase.storage
-        .from('Partitions')
+        .from('partitions')
         .getPublicUrl(filePath);
 
       setForm({ ...form, fichier_url: urlData.publicUrl });
-      toast.success('Fichier uploadé avec succès !');
+      toast.success('Fichier uploadé !');
     } catch (error) {
-      console.error(error);
       toast.error("Erreur Upload: " + error.message);
     } finally {
       setUploading(false);
@@ -62,20 +59,9 @@ const Partitions = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
-    if (!form.fichier_url) {
-      toast.error('Attendez que le fichier soit uploadé ou entrez un lien');
-      setLoading(false);
-      return;
-    }
-
-    const { error } = await supabase
-      .from('partitions')
-      .insert([form]);
-
-    if (error) {
-      toast.error("Erreur Base de données: " + error.message);
-    } else {
+    const { error } = await supabase.from('partitions').insert([form]);
+    if (error) toast.error(error.message);
+    else {
       toast.success('Partition ajoutée !');
       setForm({ titre: '', compositeur: '', voix: '', fichier_url: '' });
       fetchPartitions();
@@ -85,78 +71,31 @@ const Partitions = () => {
 
   return (
     <div className="p-6">
-      <h2 className="text-2xl font-bold mb-6">Gestion des Partitions</h2>
-
-      <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md mb-8">
+      <h2 className="text-2xl font-bold mb-6">Partitions</h2>
+      <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow mb-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input
-            type="text"
-            placeholder="Titre de l'œuvre"
-            className="p-2 border rounded"
-            value={form.titre}
-            onChange={(e) => setForm({...form, titre: e.target.value})}
-            required
-          />
-          <input
-            type="text"
-            placeholder="Compositeur"
-            className="p-2 border rounded"
-            value={form.compositeur}
-            onChange={(e) => setForm({...form, compositeur: e.target.value})}
-          />
-          <select 
-            className="p-2 border rounded"
-            value={form.voix}
-            onChange={(e) => setForm({...form, voix: e.target.value})}
-            required
-          >
+          <input type="text" placeholder="Titre" className="p-2 border rounded" value={form.titre} onChange={(e) => setForm({...form, titre: e.target.value})} required />
+          <input type="text" placeholder="Compositeur" className="p-2 border rounded" value={form.compositeur} onChange={(e) => setForm({...form, compositeur: e.target.value})} />
+          <select className="p-2 border rounded" value={form.voix} onChange={(e) => setForm({...form, voix: e.target.value})} required>
             <option value="">Choisir la voix</option>
             <option value="Soprano">Soprano</option>
             <option value="Alto">Alto</option>
             <option value="Ténor">Ténor</option>
             <option value="Basse">Basse</option>
-            <option value="Tout le chœur">Tout le chœur</option>
+            <option value="Chœur">Tout le chœur</option>
           </select>
-          
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-semibold text-gray-600">Télécharger le fichier :</label>
-            <input
-              type="file"
-              onChange={handleFileUpload}
-              disabled={uploading}
-              className="text-sm"
-            />
-            {uploading && <span className="text-blue-500">Upload en cours...</span>}
-          </div>
+          <input type="file" onChange={handleFileUpload} disabled={uploading} />
         </div>
-        
-        <button 
-          type="submit" 
-          disabled={loading || uploading}
-          className="mt-6 bg-indigo-600 text-white px-6 py-2 rounded hover:bg-indigo-700 disabled:opacity-50"
-        >
-          {loading ? 'Enregistrement...' : 'Ajouter la partition'}
+        <button type="submit" disabled={loading || uploading} className="mt-4 bg-blue-600 text-white px-4 py-2 rounded">
+          {loading ? 'Enregistrement...' : 'Ajouter'}
         </button>
       </form>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {partitions.map((part) => (
-          <div key={part.id} className="bg-white p-4 rounded shadow border-l-4 border-indigo-500">
-            <h3 className="font-bold text-lg">{part.titre}</h3>
-            <p className="text-gray-600">{part.compositeur}</p>
-            <span className="inline-block bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded mt-2">
-              {part.voix}
-            </span>
-            <div className="mt-4">
-              <a 
-                href={part.fichier_url} 
-                target="_blank" 
-                rel="noreferrer"
-                className="text-indigo-600 hover:underline font-medium"
-              >
-                Voir le fichier 📄
-              </a>
-            </div>
+          <div key={part.id} className="bg-white p-4 rounded shadow border-l-4 border-blue-500">
+            <h3 className="font-bold">{part.titre}</h3>
+            <p className="text-sm text-gray-500">{part.compositeur} ({part.voix})</p>
+            <a href={part.fichier_url} target="_blank" rel="noreferrer" className="text-blue-600 text-sm mt-2 block">Ouvrir PDF</a>
           </div>
         ))}
       </div>
