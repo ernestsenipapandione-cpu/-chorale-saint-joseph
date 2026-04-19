@@ -20,35 +20,31 @@ const DonForm = () => {
         currency: "XOF",
         ref_command: `DON-${Date.now()}`,
         command_name: `Don de ${donForm.nom}`,
-        env: "live", // 🚀 MODE RÉEL ACTIVÉ
+        env: "live",
         success_url: `${window.location.origin}/merci`,
         cancel_url: `${window.location.origin}/`,
-        customer_phone: donForm.telephone 
-      };
+        customer_phone: donForm.telephone
+      }
 
-      // Appel vers ton API Serverless sur Vercel
       const response = await fetch("/api/paytech", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(paymentData)
-      });
+      })
 
-      const result = await response.json();
+      const result = await response.json()
 
       if (result.success === 1) {
-        // Redirection vers la page de paiement réelle (Orange Money, Wave, etc.)
-        window.location.href = result.redirect_url;
+        window.location.href = result.redirect_url
       } else {
-        const errorMsg = result.errors ? result.errors[0] : "Erreur de configuration";
-        toast.error("Paiement : " + errorMsg);
-        console.log("Détails PayTech:", result);
+        // Si ça affiche "Erreur de configuration", c'est que PayTech rejette le domaine ou les clés
+        const errorMsg = result.errors ? result.errors[0] : "Erreur de configuration"
+        toast.error("Paiement : " + errorMsg)
       }
-
     } catch (err) {
-      console.error("Erreur:", err);
-      toast.error("Impossible de joindre le service de paiement.");
+      toast.error("Impossible de joindre le service de paiement.")
     } finally {
       setDonLoading(false)
     }
