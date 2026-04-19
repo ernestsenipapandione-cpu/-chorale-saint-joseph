@@ -11,6 +11,8 @@ import Contact from './pages/Contact'
 import Contacts from './pages/Contacts'
 import Finances from './pages/Finances'
 import Settings from './pages/Settings'
+// 1. On importe la nouvelle page Merci
+import Merci from './pages/Merci' 
 
 function App() {
   return (
@@ -28,6 +30,10 @@ function App() {
         <Route path="/contacts" element={<Contacts />} />
         <Route path="/finances" element={<Finances />} />
         <Route path="/settings" element={<Settings />} />
+        
+        {/* 2. On ajoute la route pour le retour de paiement */}
+        <Route path="/merci" element={<Merci />} />
+        
       </Routes>
     </BrowserRouter>
   )

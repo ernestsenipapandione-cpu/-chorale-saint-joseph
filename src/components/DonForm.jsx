@@ -4,16 +4,17 @@ import toast from 'react-hot-toast'
 
 const DonForm = () => {
   const [donForm, setDonForm] = useState({
-    nom: '', telephone: '', montant: '',
+    nom: '', 
+    telephone: '', 
+    montant: '',
   })
   const [donLoading, setDonLoading] = useState(false)
-  const [donSubmitted, setDonSubmitted] = useState(false)
 
   // ==========================================
-  // CONFIGURATION PAYTECH (À REMPLIR)
+  // CONFIGURATION PAYTECH
   // ==========================================
-  const API_KEY = "02a4e8c67fd77c1468cbfefea15d3fe6f66ff8b190a37559decc760d92028626"; // Ta clé publique
-  const API_SECRET = "cc98f7e3c833a1a79eaf0666644a0ce87814fe64a5a486c195d00800ba800a60"; // Colle ta clé secrète ici
+  const API_KEY = "02a4e8c67fd77c1468cbfefea15d3fe6f66ff8b190a37559decc760d92028626";
+  const API_SECRET = "cc98f7e3c833a1a79eaf0666644a0ce87814fe64a5a486c195d00800ba800a60"; 
   // ==========================================
 
   const handleDon = async (methode) => {
@@ -25,30 +26,21 @@ const DonForm = () => {
     setDonLoading(true)
 
     try {
-      // 1. On enregistre d'abord la trace du don dans Supabase
-      const { error: dbError } = await supabase.from('finances').insert([{
-        titre: `Don de ${donForm.nom}`,
-        type: 'Entrée',
-        montant: parseFloat(donForm.montant),
-        description: `Tentative de don via ${methode} - Tel: ${donForm.telephone}`,
-        date: new Date().toISOString().split('T')[0],
-      }])
-
-      if (dbError) throw new Error("Erreur base de données: " + dbError.message)
-
-      // 2. On prépare les données pour PayTech
+      // Préparation des données pour PayTech
+      // On passe le nom et le montant dans l'URL de succès pour les enregistrer plus tard
       const paymentData = {
         item_name: "Don Chorale Saint Joseph",
         item_price: donForm.montant,
         currency: "XOF",
-        ref_command: `DON-${Date.now()}`, // Identifiant unique
-        command_name: `Don de ${donForm.nom} (${donForm.telephone})`,
-        env: "live", // ⚠️ REMPLACE "test" PAR "live" QUAND TU VEUX RECEVOIR DU VRAI ARGENT
-        success_url: window.location.origin + "/merci",
+        ref_command: `DON-${Date.now()}`,
+        command_name: `Don de ${donForm.nom}`,
+        env: "live", 
+        success_url: `${window.location.origin}/merci?nom=${encodeURIComponent(donForm.nom)}&montant=${donForm.montant}&methode=${encodeURIComponent(methode)}`,
+        cancel_url: `${window.location.origin}/`,
         ipn_url: window.location.origin + "/api/paytech-callback"
       };
 
-      // 3. Appel à l'API de PayTech
+      // Appel à PayTech
       const response = await fetch("https://paytech.sn/api/payment/request-payment", {
         method: "POST",
         headers: {
@@ -63,42 +55,26 @@ const DonForm = () => {
       const result = await response.json();
 
       if (result.success === 1) {
-        // Redirection vers la page de paiement (Orange Money, Wave, etc.)
+        // Redirection vers Orange Money / Wave
         window.location.href = result.redirect_url;
       } else {
-        const errorMsg = result.errors ? result.errors[0] : "Erreur de configuration API";
+        const errorMsg = result.errors ? result.errors[0] : "Erreur de configuration";
         toast.error("Erreur PayTech : " + errorMsg);
       }
 
     } catch (err) {
-      toast.error("Impossible de lancer le paiement : " + err.message);
+      toast.error("Impossible de joindre le service de paiement");
       console.error(err);
     } finally {
       setDonLoading(false)
     }
   }
 
-  if (donSubmitted) {
-    return (
-      <div className="bg-white rounded-2xl shadow p-8 text-center">
-        <span className="text-6xl block mb-4">🙏</span>
-        <h3 className="text-2xl font-bold text-primary mb-2">Merci pour votre don !</h3>
-        <p className="text-gray-500 mb-6">Votre générosité aide la Chorale Saint Joseph. 🎵</p>
-        <button 
-          onClick={() => setDonSubmitted(false)} 
-          className="bg-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-800 transition"
-        >
-          Faire un autre don
-        </button>
-      </div>
-    )
-  }
-
   return (
     <div className="bg-white rounded-2xl shadow p-8 border border-gray-100">
       <h3 className="text-2xl font-bold text-primary mb-2 text-center">💝 Soutenir la Chorale</h3>
       <p className="text-gray-500 text-center mb-6 text-sm">
-        Choisissez votre mode de paiement préféré
+        Votre don sera enregistré après confirmation du paiement
       </p>
 
       <div className="space-y-4">
@@ -154,7 +130,7 @@ const DonForm = () => {
         </div>
 
         <p className="text-[10px] text-gray-400 text-center mt-4 uppercase tracking-widest">
-          Sécurisé par PayTech Sénégal
+          Système sécurisé PayTech Sénégal
         </p>
       </div>
     </div>
