@@ -7,7 +7,7 @@ const Sidebar = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const [collapsed, setCollapsed] = useState(false)
-  const [isOpen, setIsOpen] = useState(false) // Pour le menu mobile
+  const [isOpen, setIsOpen] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const [adminInfo, setAdminInfo] = useState(null)
 
@@ -16,13 +16,19 @@ const Sidebar = () => {
       const admin = await checkIsAdmin()
       setIsAdmin(admin)
       if (admin) {
-        const { data: { user } } = await supabase.auth.getUser()
-        const { data } = await supabase
-          .from('admins')
-          .select('*')
-          .eq('email', user.email)
-          .single()
-        setAdminInfo(data)
+        try {
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user) {
+            const { data } = await supabase
+              .from('admins')
+              .select('*')
+              .eq('email', user.email)
+              .single()
+            setAdminInfo(data)
+          }
+        } catch (err) {
+          console.error("Erreur admin info:", err)
+        }
       }
     }
     getAdmin()
@@ -47,57 +53,52 @@ const Sidebar = () => {
 
   return (
     <>
-      {/* BARRE MOBILE (Visible uniquement sur petit écran) */}
-      <div className="md:hidden bg-primary text-white p-4 flex justify-between items-center sticky top-0 z-50 shadow-lg">
+      {/* BARRE MOBILE (Fixe en haut) */}
+      <div className="md:hidden bg-primary text-white p-4 flex justify-between items-center fixed top-0 left-0 right-0 z-[110] shadow-lg h-[70px]">
         <div className="flex items-center gap-2">
           <span className="text-xl">🎵</span>
           <span className="font-bold text-sm">St Joseph</span>
         </div>
         <button 
           onClick={() => setIsOpen(!isOpen)}
-          className="p-2 bg-blue-800 rounded-lg focus:outline-none hover:bg-blue-700 transition-colors"
+          className="p-2 bg-blue-800 rounded-lg active:bg-blue-700"
         >
-          <span className="text-2xl font-bold">{isOpen ? '✕' : '☰'}</span>
+          <span className="text-2xl">{isOpen ? '✕' : '☰'}</span>
         </button>
       </div>
 
-      {/* SIDEBAR PRINCIPALE */}
+      {/* SIDEBAR */}
       <div className={`
-        bg-primary text-white transition-all duration-300 flex flex-col z-40
+        bg-primary text-white transition-all duration-300 flex flex-col
         fixed inset-y-0 left-0 w-64 md:relative md:translate-x-0
         ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
         ${collapsed ? 'md:w-20' : 'md:w-64'} 
-        h-full md:min-h-screen
+        z-[100] h-full
       `}>
 
-        {/* Logo (Visible sur PC uniquement) */}
+        {/* Logo (PC uniquement) */}
         <div className="hidden md:flex p-4 items-center justify-between border-b border-blue-800">
           {!collapsed && (
             <div className="flex items-center gap-2">
               <span className="text-2xl">🎵</span>
-              <span className="font-bold text-sm">Chorale St Joseph</span>
+              <span className="font-bold text-sm text-white">Chorale St Joseph</span>
             </div>
           )}
-          {collapsed && <span className="text-2xl mx-auto">🎵</span>}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="text-white hover:text-secondary transition ml-auto"
+            className="text-white hover:text-secondary ml-auto"
           >
             {collapsed ? '→' : '←'}
           </button>
         </div>
 
-        {/* Admin Badge */}
-        {isAdmin && (
-          <div className={`mx-4 mt-4 bg-secondary rounded-xl px-3 py-2 text-center ${collapsed ? 'md:hidden' : 'block'}`}>
-            <p className="text-xs font-bold truncate text-white">👑 {adminInfo?.nom || 'Admin'}</p>
-          </div>
-        )}
-
-        {/* Liste du Menu - Ajout de padding-top pour le mobile */}
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto pt-6 md:pt-4">
+        {/* Menu avec protection pour le mobile */}
+        <nav className={`
+          flex-1 p-4 space-y-2 overflow-y-auto
+          ${isOpen ? 'pt-[80px]' : 'pt-4'} 
+          md:pt-4
+        `}>
           {menuItems.map((item) => {
-            // Si l'item est adminOnly et que l'utilisateur n'est pas admin, on ne l'affiche pas
             if (item.adminOnly && !isAdmin) return null
             
             const isActive = location.pathname === item.path
@@ -107,12 +108,12 @@ const Sidebar = () => {
                 key={item.path}
                 onClick={() => {
                   navigate(item.path)
-                  setIsOpen(false) // Ferme le menu mobile après le clic
+                  setIsOpen(false)
                 }}
-                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition duration-200 
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all
                   ${isActive
                     ? 'bg-secondary text-white shadow-md'
-                    : 'hover:bg-blue-800 text-white opacity-90 hover:opacity-100'
+                    : 'hover:bg-blue-800 text-white/90 hover:text-white'
                   }`}
               >
                 <span className="text-xl shrink-0">{item.icon}</span>
@@ -124,11 +125,11 @@ const Sidebar = () => {
           })}
         </nav>
 
-        {/* Bouton Déconnexion */}
+        {/* Déconnexion */}
         <div className="p-4 border-t border-blue-800 bg-primary">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-red-600 transition duration-200"
+            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-red-600 transition-colors"
           >
             <span className="text-xl shrink-0">🚪</span>
             <span className={`text-sm font-medium ${collapsed ? 'md:hidden' : 'block'}`}>
@@ -138,10 +139,10 @@ const Sidebar = () => {
         </div>
       </div>
 
-      {/* Overlay Sombre (Mobile uniquement) */}
+      {/* Overlay Sombre */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/60 z-30 md:hidden backdrop-blur-sm"
+          className="fixed inset-0 bg-black/60 z-[90] md:hidden backdrop-blur-sm"
           onClick={() => setIsOpen(false)}
         ></div>
       )}
