@@ -3,9 +3,8 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: 'Méthode non autorisée' });
   }
 
-  // 1. Tes identifiants (Vérifie bien ta clé secrète sur ton tableau de bord PayTech)
   const API_KEY = "02a4e8c67fd77c1468cbfefea15d3fe6f66ff8b190a37559decc760d92028626";
-  const API_SECRET = "cc98f7e3c833a1a79eaf0666644a0ce87814fe64a5a486c195d00800ba800a60"; // <--- ASSURE-TOI QUE C'EST LA BONNE
+  const API_SECRET = "cc98f7e3c833a1a79eaf0666644a0ce87814fe64a5a486c195d00800ba800a60";
 
   try {
     const response = await fetch("https://paytech.sn/api/payment/request-payment", {
@@ -16,6 +15,7 @@ export default async function handler(req, res) {
         "API_KEY": API_KEY,
         "API_SECRET": API_SECRET
       },
+      // On envoie exactement ce que PayTech attend, ni plus ni moins
       body: JSON.stringify({
         item_name: req.body.item_name,
         item_price: req.body.item_price,
@@ -24,14 +24,13 @@ export default async function handler(req, res) {
         command_name: req.body.command_name,
         env: req.body.env,
         success_url: req.body.success_url,
-        cancel_url: req.body.cancel_url,
-        // On les ajoute aussi dans le corps car PayTech le demande parfois
-        api_key: API_KEY,
-        api_secret: API_SECRET
+        cancel_url: req.body.cancel_url
       })
     });
 
     const data = await response.json();
+    
+    // On renvoie la réponse exacte de PayTech
     return res.status(200).json(data);
   } catch (error) {
     return res.status(500).json({ error: "Erreur de connexion PayTech" });
