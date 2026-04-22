@@ -24,7 +24,7 @@ export default async function handler(req, res) {
         ref_command: req.body.ref_command,
         command_name: req.body.command_name,
         // PASSAGE EN MODE LIVE FORCE
-        env: "test", 
+        env: "live", 
         success_url: req.body.success_url,
         cancel_url: req.body.cancel_url,
         custom_field: req.body.custom_field || ""
